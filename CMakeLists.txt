@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED( VERSION 3.12 )
 
-set(PRJ KrioTest)
+set(PRJ Uroboro)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -12,4 +12,11 @@ main.cpp
 master.cpp
 )
 
+if(WIN32)
+target_link_libraries(${PRJ} user32 kernel32 gdi32 opengl32)
+endif()
+
+if(UNIX AND NOT APPLE)
 target_link_libraries(${PRJ} X11 GL)
+endif()
+
