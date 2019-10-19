@@ -7,13 +7,13 @@ int main(int argc, char** argv)
 {
 	SYS sys;
 	sys.Init();
-	WINDOW win=sys.CreateWindow(1024, 768, "Uoroboro");
+	WINDOW win=sys.CreateWin(1024, 768, "Uoroboro");
 	CMaster* master=new CMaster;
 	master->Init(sys,win);
 
 	while(true)
 	{
-		if(sys.quitRequested)
+		if(sys.QuitRequested())
 		{
 			break;
 		}
@@ -31,7 +31,7 @@ int main(int argc, char** argv)
 		master
 		);
 
-		if(sys.quitRequested)
+		if(sys.QuitRequested())
 		{
 			break;
 		}

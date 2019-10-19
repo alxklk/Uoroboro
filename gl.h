@@ -1,6 +1,8 @@
 #define GL_VERSION_4_5
 
-#define GL_EXT_PROTOTYPES 
+#ifdef __linux__
+
+#define GL_EXT_PROTOTYPES
 #define GLX_EXT_PROTOTYPES
 #define GL_GLEXT_PROTOTYPES
 
@@ -8,76 +10,100 @@
 #include <GL/glx.h>
 #include <GL/glxext.h>
 
-#if 0
-class GLH
-{
-	bool started;
-public:
-	PFNGLGENFRAMEBUFFERSPROC      glGenFramebuffers     ;
-	PFNGLBINDFRAMEBUFFERPROC      glBindFramebuffer     ;
-	PFNGLFRAMEBUFFERTEXTURE2DPROC glFramebufferTexture2D;
-	PFNGLCREATESHADERPROC         glCreateShader        ;
-	PFNGLSHADERSOURCEPROC         glShaderSource        ;
-	PFNGLCOMPILESHADERPROC        glCompileShader       ;
-	PFNGLGETSHADERIVPROC          glGetShaderiv         ;
-	PFNGLGETSHADERINFOLOGPROC     glGetShaderInfoLog    ;
-	PFNGLCREATEPROGRAMPROC        glCreateProgram       ;
-	PFNGLATTACHSHADERPROC         glAttachShader        ;
-	PFNGLLINKPROGRAMPROC          glLinkProgram         ;
-	PFNGLUSEPROGRAMPROC           glUseProgram          ;
-	PFNGLPROGRAMUNIFORM1FPROC     glProgramUniform1f    ;
-	PFNGLPROGRAMUNIFORM2FPROC     glProgramUniform2f    ;
-	PFNGLPROGRAMUNIFORM3FPROC     glProgramUniform3f    ;
-	PFNGLPROGRAMUNIFORM4FPROC     glProgramUniform4f    ;
+using GLContext=GLXContext;
 
-	GLH():started(false){};
-	GLH& I()
-	{
-		static GLH glh;
-		if(!glh.started)
-			Init();
-		return glh;
-	}
-	
-#define gl_GetProcAddress glXGetProcAddress
-	
+#define FH
+
+#endif
+
+#ifdef WIN32
+
+#define GL_EXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES
+#define WGL_WGLEXT_PROTOTYPES
+
+#include <GL/gl.h>
+#include <GL/glext.h>
+#include <GL/wglext.h>
+
+using GLContext=HGLRC;
+
+template <typename T>void wgpa(T& p, const char* name){p=(T)wglGetProcAddress(name);};
+
+#define STR(S) #S
+#define WGPA(S) wgpa(S, STR(S))
+
+class FnHelper
+{
+public:
+	PFNGLCREATESHADERPROC         glCreateShader;
+	PFNGLSHADERSOURCEPROC         glShaderSource;
+	PFNGLCOMPILESHADERPROC        glCompileShader;
+	PFNGLGETSHADERIVPROC          glGetShaderiv;
+	PFNGLGETSHADERINFOLOGPROC     glGetShaderInfoLog;
+	PFNGLCREATEPROGRAMPROC        glCreateProgram;
+	PFNGLATTACHSHADERPROC         glAttachShader;
+	PFNGLACTIVETEXTUREPROC        glActiveTexture;
+	PFNGLLINKPROGRAMPROC          glLinkProgram;
+	PFNGLUSEPROGRAMPROC           glUseProgram;
+	PFNGLGETUNIFORMLOCATIONPROC   glGetUniformLocation;
+	PFNGLUNIFORM1FPROC            glUniform1f;
+	PFNGLUNIFORM2FPROC            glUniform2f;
+	PFNGLUNIFORM3FPROC            glUniform3f;
+	PFNGLUNIFORM4FPROC            glUniform4f;
+
+	PFNGLGENFRAMEBUFFERSPROC         glGenFramebuffers;
+	PFNGLGENRENDERBUFFERSPROC        glGenRenderbuffers;
+	PFNGLBINDFRAMEBUFFERPROC         glBindFramebuffer;
+	PFNGLBINDRENDERBUFFERPROC        glBindRenderbuffer;
+	PFNGLRENDERBUFFERSTORAGEPROC     glRenderbufferStorage;
+	PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer;
+	PFNGLFRAMEBUFFERTEXTURE2DPROC    glFramebufferTexture2D;
+
+
 	void Init()
 	{
-		/*PFNGLGENFRAMEBUFFERSPROC      */glGenFramebuffers     =(PFNGLGENFRAMEBUFFERSPROC)      gl_GetProcAddress((const GLubyte*)"glGenFramebuffers"     );
-		/*PFNGLBINDFRAMEBUFFERPROC      */glBindFramebuffer     =(PFNGLBINDFRAMEBUFFERPROC)      gl_GetProcAddress((const GLubyte*)"glBindFramebuffer"     );
-		/*PFNGLFRAMEBUFFERTEXTURE2DPROC */glFramebufferTexture2D=(PFNGLFRAMEBUFFERTEXTURE2DPROC) gl_GetProcAddress((const GLubyte*)"glFramebufferTexture2D");
-		/*PFNGLCREATESHADERPROC         */glCreateShader        =(PFNGLCREATESHADERPROC)         gl_GetProcAddress((const GLubyte*)"glCreateShader"        );
-		/*PFNGLSHADERSOURCEPROC         */glShaderSource        =(PFNGLSHADERSOURCEPROC)         gl_GetProcAddress((const GLubyte*)"glShaderSource"        );
-		/*PFNGLCOMPILESHADERPROC        */glCompileShader       =(PFNGLCOMPILESHADERPROC)        gl_GetProcAddress((const GLubyte*)"glCompileShader"       );
-		/*PFNGLGETSHADERIVPROC          */glGetShaderiv         =(PFNGLGETSHADERIVPROC)          gl_GetProcAddress((const GLubyte*)"glGetShaderiv"         );
-		/*PFNGLGETSHADERINFOLOGPROC     */glGetShaderInfoLog    =(PFNGLGETSHADERINFOLOGPROC)     gl_GetProcAddress((const GLubyte*)"glGetShaderInfoLog"    );
-		/*PFNGLCREATEPROGRAMPROC        */glCreateProgram       =(PFNGLCREATEPROGRAMPROC)        gl_GetProcAddress((const GLubyte*)"glCreateProgram"       );
-		/*PFNGLATTACHSHADERPROC         */glAttachShader        =(PFNGLATTACHSHADERPROC)         gl_GetProcAddress((const GLubyte*)"glAttachShader"        );
-		/*PFNGLLINKPROGRAMPROC          */glLinkProgram         =(PFNGLLINKPROGRAMPROC)          gl_GetProcAddress((const GLubyte*)"glLinkProgram"         );
-		/*PFNGLUSEPROGRAMPROC           */glUseProgram          =(PFNGLUSEPROGRAMPROC)           gl_GetProcAddress((const GLubyte*)"glUseProgram"          );
-		/*PFNGLPROGRAMUNIFORM1FPROC     */glProgramUniform1f    =(PFNGLPROGRAMUNIFORM1FPROC)     gl_GetProcAddress((const GLubyte*)"glProgramUniform1f"    );
-		/*PFNGLPROGRAMUNIFORM2FPROC     */glProgramUniform2f    =(PFNGLPROGRAMUNIFORM2FPROC)     gl_GetProcAddress((const GLubyte*)"glProgramUniform2f"    );
-		/*PFNGLPROGRAMUNIFORM3FPROC     */glProgramUniform3f    =(PFNGLPROGRAMUNIFORM3FPROC)     gl_GetProcAddress((const GLubyte*)"glProgramUniform3f"    );
-		/*PFNGLPROGRAMUNIFORM4FPROC     */glProgramUniform4f    =(PFNGLPROGRAMUNIFORM4FPROC)     gl_GetProcAddress((const GLubyte*)"glProgramUniform4f"    );
+
+	WGPA(glCreateShader);
+	WGPA(glShaderSource);
+	WGPA(glCompileShader);
+	WGPA(glGetShaderiv);
+	WGPA(glGetShaderInfoLog);
+	WGPA(glCreateProgram);
+	WGPA(glAttachShader);
+	WGPA(glActiveTexture);
+	WGPA(glLinkProgram);
+	WGPA(glUseProgram);
+	WGPA(glGetUniformLocation);
+	WGPA(glUniform4f);
+
+	WGPA(glGenFramebuffers);
+	WGPA(glGenRenderbuffers);
+	WGPA(glBindFramebuffer);
+	WGPA(glBindRenderbuffer);
+	WGPA(glRenderbufferStorage);
+	WGPA(glFramebufferRenderbuffer);
+	WGPA(glFramebufferTexture2D);
+
+
+
+	}
+
+	static FnHelper* Instance()
+	{
+		static FnHelper* fh=0;
+		if(!fh)
+		{
+			fh=new FnHelper;
+			fh->Init();
+		}
+		return fh;
 	}
 };
 
-/*
-PFNGLGENFRAMEBUFFERSPROC      glGenFramebuffers     ;
-PFNGLBINDFRAMEBUFFERPROC      glBindFramebuffer     ;
-PFNGLFRAMEBUFFERTEXTURE2DPROC glFramebufferTexture2D;
-PFNGLCREATESHADERPROC         glCreateShader        ;
-PFNGLSHADERSOURCEPROC         glShaderSource        ;
-PFNGLCOMPILESHADERPROC        glCompileShader       ;
-PFNGLGETSHADERIVPROC          glGetShaderiv         ;
-PFNGLGETSHADERINFOLOGPROC     glGetShaderInfoLog    ;
-PFNGLCREATEPROGRAMPROC        glCreateProgram       ;
-PFNGLATTACHSHADERPROC         glAttachShader        ;
-PFNGLLINKPROGRAMPROC          glLinkProgram         ;
-PFNGLUSEPROGRAMPROC           glUseProgram          ;
-*/
+#define FH FnHelper::Instance()->
 
-#endif 
+#endif
 
 class GLShader
 {
@@ -87,8 +113,8 @@ class GLShader
 public:
 	bool Create(const char* text, int len)
 	{
-		int newvsh=glCreateShader(GL_VERTEX_SHADER);
-		int newpsh=glCreateShader(GL_FRAGMENT_SHADER);
+		int newvsh=FH glCreateShader(GL_VERTEX_SHADER);
+		int newpsh=FH glCreateShader(GL_FRAGMENT_SHADER);
 		
 		const char* vshcode[2]={"#define VERTEX_SHADER\n",text};
 		const char* fshcode[2]={
@@ -109,34 +135,34 @@ public:
 			,text};
 		int codelens[2]={-1,len};
 		
-		glShaderSource(newvsh, 2, vshcode, codelens);
-		glShaderSource(newpsh, 2, fshcode, codelens);
+		FH glShaderSource(newvsh, 2, vshcode, codelens);
+		FH glShaderSource(newpsh, 2, fshcode, codelens);
 
 		GLint ok;
 		char errorbuf[1024];
 		int errorlen=0;
 			
-		glCompileShader(newvsh);
-		glGetShaderiv(newvsh, GL_COMPILE_STATUS, &ok);
+		FH glCompileShader(newvsh);
+		FH glGetShaderiv(newvsh, GL_COMPILE_STATUS, &ok);
 		if(!ok)
 		{
-			glGetShaderInfoLog(newvsh, 1024, &errorlen, errorbuf);
+			FH glGetShaderInfoLog(newvsh, 1024, &errorlen, errorbuf);
 			fprintf(stderr,"Veertex: \n%s\n",errorbuf);
 			return false;
 		}	
 
-		glCompileShader(newpsh);
-		glGetShaderiv(newpsh, GL_COMPILE_STATUS, &ok);
+		FH glCompileShader(newpsh);
+		FH glGetShaderiv(newpsh, GL_COMPILE_STATUS, &ok);
 		if(!ok)
 		{
-			glGetShaderInfoLog(newpsh, 1024, &errorlen, errorbuf);
+			FH glGetShaderInfoLog(newpsh, 1024, &errorlen, errorbuf);
 			fprintf(stderr,"Fragment: \n%s\n",errorbuf);
 			return false;
 		}
-		int newprg=glCreateProgram();
-		glAttachShader(newprg,newvsh);
-		glAttachShader(newprg,newpsh);
-		glLinkProgram(newprg);
+		int newprg=FH glCreateProgram();
+		FH glAttachShader(newprg,newvsh);
+		FH glAttachShader(newprg,newpsh);
+		FH glLinkProgram(newprg);
 		
 		vsh=newvsh;
 		psh=newpsh;
@@ -168,34 +194,44 @@ public:
 
 	void SetUniform1f(const char* name, const float& value)
 	{
-		glUniform1f(glGetUniformLocation(prg,name),value);
+		FH glUniform1f(FH glGetUniformLocation(prg,name),value);
 	}
 	void SetUniform2f(const char* name, const float& value0, const float& value1)
 	{
-		glUniform2f(glGetUniformLocation(prg,name),value0,value1);
+		FH glUniform2f(FH glGetUniformLocation(prg,name),value0,value1);
 	}
 	void SetUniform3f(const char* name, const float& value0, const float& value1, const float& value2)
 	{
-		glUniform3f(glGetUniformLocation(prg,name),value0,value1,value2);
+		FH glUniform3f(FH glGetUniformLocation(prg,name),value0,value1,value2);
 	}
 	void SetUniform4f(const char* name, const float& value0, const float& value1, const float& value2, const float& value3)
 	{
-		glUniform4f(glGetUniformLocation(prg,name),value0,value1,value2,value3);
+		FH glUniform4f(FH glGetUniformLocation(prg,name),value0,value1,value2,value3);
 	}
 
 	bool Use()
 	{
-		glUseProgram(prg);
+		FH glUseProgram(prg);
 		return true;
 	}
 };
 
 class CGL
 {
+#ifdef __linux__
+	Display* dsp;
+#endif
+
+#ifdef WIN32
+
+	HDC dc;
+
+#endif
+
+	WINDOW win;
+
 	bool doubleBuf;
-	Display* display;
-	Window window;
-	GLXContext glxContext;
+	GLContext glc;
 
 	GLuint textureA;
 	GLuint fboA;
@@ -225,11 +261,12 @@ public:
 			blurRadius=0;
 	};
 
-	int Init(Display* dsp, Window& win)
+	int Init(const SYS* sys, WINDOW& window)
 	{
 		blurRadius=1.0;
-		display=dsp;
-		window=win;
+#ifdef __linux__
+		dsp=sys->dsp;
+		win=window;
 		int doubleBufferVisual[]= 
 		{
 			GLX_RGBA,           // Needs to support OpenGL
@@ -263,81 +300,99 @@ public:
 			doubleBuf=false;
 		}
 
-		glxContext=glXCreateContext(dsp,visualInfo, nullptr, GL_TRUE);
-		if(glxContext==nullptr)
+		glc=glXCreateContext(dsp,visualInfo, nullptr, GL_TRUE);
+		if(glc==nullptr)
 		{
 			fprintf(stderr, "Could not create rendering context\n");
 			return 1;
 		}
 
-		glXMakeCurrent(dsp, win, glxContext);
+		glXMakeCurrent(dsp, win, glc);
+#endif
+
+#ifdef WIN32
+
+		dc = GetDC(win);
+		PIXELFORMATDESCRIPTOR pfd = { 0, 0, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // wrong way ;)
+		//		oldPixelFormat=GetPixelFormat(dc);
+		SetPixelFormat(dc, ChoosePixelFormat(dc, &pfd), &pfd);
+		glc = wglCreateContext(dc);
+		wglMakeCurrent(dc, glc);
+
+#endif
+
+		glEnable(GL_TEXTURE_2D);
+		glGenTextures(1, &textureA);
+		glBindTexture(GL_TEXTURE_2D, textureA);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 768, 0, GL_RGBA,  GL_UNSIGNED_BYTE, NULL);
+
+		FH glGenFramebuffers(1, &fboA);
+		FH glBindFramebuffer(GL_FRAMEBUFFER, fboA);
+		FH glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureA, 0);
+
+		glEnable(GL_TEXTURE_2D);
+		glGenTextures(1, &textureB);
+		glBindTexture(GL_TEXTURE_2D, textureB);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 768, 0, GL_RGBA,  GL_UNSIGNED_BYTE, NULL);
+
+		FH glGenFramebuffers(1, &fboB);
+		FH glBindFramebuffer(GL_FRAMEBUFFER, fboB);
+		FH glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureB, 0);
 
 
-	glEnable(GL_TEXTURE_2D);
-	glGenTextures(1, &textureA);
-	glBindTexture(GL_TEXTURE_2D, textureA);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 768, 0, GL_RGBA,  GL_UNSIGNED_BYTE, NULL);
+		sh0.CreateFromFile("sh0.glsl");
+		shGaussVert.CreateFromFile("shgaussvert.glsl");
+		shGaussHorz.CreateFromFile("shgausshorz.glsl");
+		shBlit.CreateFromFile("shblit.glsl");
+		return 1;
+	}
 
-	glGenFramebuffers(1, &fboA);
-	glBindFramebuffer(GL_FRAMEBUFFER, fboA);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureA, 0);
+	int ReloadShaders()
+	{
+		sh0.CreateFromFile("sh0.glsl");
+		shGaussVert.CreateFromFile("shgaussvert.glsl");
+		shGaussHorz.CreateFromFile("shgausshorz.glsl");
+		shBlit.CreateFromFile("shblit.glsl");
+		return 1;
+	}
 
-	glEnable(GL_TEXTURE_2D);
-	glGenTextures(1, &textureB);
-	glBindTexture(GL_TEXTURE_2D, textureB);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 768, 0, GL_RGBA,  GL_UNSIGNED_BYTE, NULL);
+	void FSQuad()
+	{
+		// TODO: replace with VBO
+			glBegin(GL_TRIANGLES);
 
-	glGenFramebuffers(1, &fboB);
-	glBindFramebuffer(GL_FRAMEBUFFER, fboB);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureB, 0);
+			glVertex2f(-1.0,-1.0);
+			glVertex2f(-1.0, 1.0);
+			glVertex2f( 1.0, 1.0);
+			glVertex2f(-1.0,-1.0);
+			glVertex2f( 1.0,-1.0);
+			glVertex2f( 1.0, 1.0);
 
+			glEnd();
+	}
 
-	sh0.CreateFromFile("sh0.glsl");
-	shGaussVert.CreateFromFile("shgaussvert.glsl");
-	shGaussHorz.CreateFromFile("shgausshorz.glsl");
-	shBlit.CreateFromFile("shblit.glsl");
-	return 1;
-}
+	int Render()
+	{
+#ifdef __linux__
+		glXMakeCurrent(dsp, win, glc);
+#endif
 
-int ReloadShaders()
-{
-	sh0.CreateFromFile("sh0.glsl");
-	shGaussVert.CreateFromFile("shgaussvert.glsl");
-	shGaussHorz.CreateFromFile("shgausshorz.glsl");
-	shBlit.CreateFromFile("shblit.glsl");
-	return 1;
-}
-
-void FSQuad()
-{
-	// TODO: replace with VBO
-		glBegin(GL_TRIANGLES);
-		
-		glVertex2f(-1.0,-1.0); 
-		glVertex2f(-1.0, 1.0); 
-		glVertex2f( 1.0, 1.0);
-		glVertex2f(-1.0,-1.0); 
-		glVertex2f( 1.0,-1.0); 
-		glVertex2f( 1.0, 1.0);
-		
-		glEnd();
-}
-
-int Render()
-{
-		glXMakeCurrent(display, window, glxContext);
+#ifdef WIN32
+		wglMakeCurrent(dc, glc);
+#endif
 
 		glEnable(GL_TEXTURE_2D);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, fboA);
+		FH glBindFramebuffer(GL_FRAMEBUFFER, fboA);
 		sh0.Use();
 		sh0.SetUniform3f("iResolution", 1024,768,1);
 		sh0.SetUniform1f("iTime", 1.);
@@ -345,25 +400,30 @@ int Render()
 		FSQuad();
 
 		glBindTexture(GL_TEXTURE_2D, textureA);
-		glBindFramebuffer(GL_FRAMEBUFFER, fboB);
+		FH glBindFramebuffer(GL_FRAMEBUFFER, fboB);
 		shGaussVert.SetUniform1f("radius",blurRadius);
 		shGaussVert.Use();
 		FSQuad();
 
 		glBindTexture(GL_TEXTURE_2D, textureB);
-		glBindFramebuffer(GL_FRAMEBUFFER, fboA);
+		FH glBindFramebuffer(GL_FRAMEBUFFER, fboA);
 		shGaussHorz.SetUniform1f("radius",blurRadius);
 		shGaussHorz.Use();
 		FSQuad();
 
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		FH glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glBindTexture(GL_TEXTURE_2D, textureA);
 		shBlit.Use();
 		FSQuad();
 
 		if(doubleBuf)
-				glXSwapBuffers(display, window);
+#ifdef __linux__
+				glXSwapBuffers(dsp, win);
+#endif
+#ifdef WIN32
+				SwapBuffers(dc);
+#endif
 		else
 				glFlush();
 		return 1;

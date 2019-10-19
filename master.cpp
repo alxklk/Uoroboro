@@ -14,7 +14,7 @@ CMaster::~CMaster()
 
 bool CMaster::Init(const SYS& sys, WINDOW& win)
 {
-	gl.Init(sys.dsp, win);
+	gl.Init(&sys, win);
 	return true;
 }
 

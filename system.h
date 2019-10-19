@@ -9,6 +9,8 @@
 
 #include "events.h"
 
+typedef int(*EventCallback)(SEvent&, void* userData);
+
 #ifdef __linux__
 
 #include <X11/Xlib.h>
@@ -17,7 +19,6 @@
 #include <ctime>
 
 using WINDOW=Window;
-typedef int(*EventCallback)(SEvent&, void* userData);
 
 inline void ParseKeyEvent(Display* dsp, const XEvent& ev, SKeyEvent& ke)
 {
@@ -184,7 +185,7 @@ struct SYS
 		return 0;
 	}
 
-	WINDOW CreateWindow(int width, int height, const char* title)
+	WINDOW CreateWin(int width, int height, const char* title)
 	{
 		Window win;
 		Window rootwin=XDefaultRootWindow(dsp);
@@ -305,14 +306,19 @@ struct SYS
 		else return -1.0;
 	}
 
-	void CloseWindow(WINDOW win)
+	void CloseWin(WINDOW win)
 	{
-		CloseWindow(win);
+		XDestroyWindow(dsp,win);
 	}
 
 	void Done()
 	{
 		XCloseDisplay(dsp);
+	}
+
+	bool QuitRequested()
+	{
+		return quitRequested;
 	}
 };
 
@@ -320,9 +326,189 @@ struct SYS
 
 #ifdef WIN32
 
+#include <windows.h>
+
+using WINDOW=HWND;
+
 struct SYS
 {
+	union XYLPARAM
+	{
+		unsigned int l;
+		struct{
+			short int x;
+			short int y;
+		};
+		XYLPARAM(LPARAM I):l((unsigned int)I){}
+	};
 
+	static void ParseMouseEvent(SMouseEvent &e, WPARAM wpar, LPARAM lpar)
+	{
+
+		e.x0=XYLPARAM(lpar).x;
+		e.y0=XYLPARAM(lpar).x;
+
+		e.x=XYLPARAM(lpar).x;
+		e.y=XYLPARAM(lpar).y;
+
+		e.fx=XYLPARAM(lpar).x;
+		e.fy=XYLPARAM(lpar).y;
+
+		e.l=(0!=(wpar&MK_LBUTTON));
+		e.r=(0!=(wpar&MK_RBUTTON));
+		e.m=(0!=(wpar&MK_MBUTTON));
+		e.c=(0!=(wpar&MK_CONTROL));
+		e.s=(0!=(wpar&MK_SHIFT));
+		e.a=(0!=(wpar&MK_ALT));
+
+		if(e.type==SMouseEvent::DN)
+			e.l=true;
+	}
+
+	static void stop(HWND hwnd,unsigned int imsg,WPARAM wpar,LPARAM lpar)
+	{
+		PostQuitMessage(0);
+	}
+
+	static int MouseEvent(HWND hwnd,unsigned int imsg,WPARAM wpar,LPARAM lpar, SEvent& ev, bool& defproc)
+	{
+		bool nonclient=false;
+		SMouseEvent me;
+		me.SetZ();
+
+		bool l=(0!=(wpar&MK_LBUTTON));
+		bool r=(0!=(wpar&MK_RBUTTON));
+		bool m=(0!=(wpar&MK_MBUTTON));
+		bool c=(0!=(wpar&MK_CONTROL));
+		bool s=(0!=(wpar&MK_SHIFT));
+		bool a=(GetAsyncKeyState(VK_MENU)&0x8000)!=0;
+
+		int x=XYLPARAM(lpar).x;
+		int y=XYLPARAM(lpar).y;
+
+		static int old_ldnx=0;
+		static int old_ldny=0;
+
+		switch(imsg)
+		{
+			case WM_LBUTTONDOWN:me.type=SMouseEvent::DN;SetCapture(hwnd);break;
+			case WM_LBUTTONUP  :me.type=SMouseEvent::UP;ReleaseCapture();break;
+			case WM_RBUTTONDOWN:me.type=SMouseEvent::RDN;SetCapture(hwnd);break;
+			case WM_RBUTTONUP  :me.type=SMouseEvent::RUP;ReleaseCapture();break;
+			case WM_MBUTTONDOWN:me.type=SMouseEvent::MDN;SetCapture(hwnd);break;
+			case WM_MBUTTONUP  :me.type=SMouseEvent::MUP;ReleaseCapture();break;
+
+			case WM_MOUSEWHEEL :
+				me.type=SMouseEvent::WHEEL;
+				POINT pnt;
+				pnt.x=x;
+				pnt.y=y;
+				ScreenToClient(hwnd,&pnt);
+				x=pnt.x;
+				y=pnt.y;
+
+				me.w=-GET_WHEEL_DELTA_WPARAM(wpar)/WHEEL_DELTA;
+				break;
+
+			case WM_MOUSEMOVE  :
+				me.type=SMouseEvent::MOVE;
+				break;
+			default: return 0;
+		}
+		me.a=a;
+		me.c=c;
+		me.s=s;
+		me.l=l;
+		me.r=r;
+		me.m=m;
+
+		me.x=x;
+		me.y=y;
+		me.fx=x;
+		me.fy=y;
+
+		if(me.type==SMouseEvent::DN)
+		{
+			me.ldx=x-old_ldnx;
+			me.ldy=y-old_ldny;
+		}
+		ev.me=me;
+		ev.eventType=SEvent::Mouse;
+		defproc=false;
+		return 1;
+	}
+
+	EventCallback eventCB=nullptr;
+	void* eventUserData=nullptr;
+
+	static LRESULT CALLBACK wp(HWND hwnd,unsigned int imsg,WPARAM wpar,LPARAM lpar)
+	{
+	#undef GWL_USERDATA
+		static const int GWL_USERDATA=-21;
+
+		SEvent event;
+		bool callDefProc=false;
+		if(MouseEvent(hwnd,imsg,wpar,lpar,event,callDefProc))
+		{
+			SYS* sys=(SYS*)GetWindowLongPtrW(hwnd, GWL_USERDATA);
+			if(sys->eventCB)
+				sys->eventCB(event,sys->eventUserData);
+		}
+		return DefWindowProcW(hwnd, imsg, wpar, lpar);
+	}
+
+
+	int Init()
+	{
+		HCURSOR arrowCursor=LoadCursor(0, IDC_ARROW);
+
+		WNDCLASSEXW wc={sizeof(WNDCLASSEXA),0,wp,0,0,0,0,0,0,0,L"APP01"};
+		wc.hCursor=arrowCursor;
+		RegisterClassExW(&wc);
+
+		return 0;
+	}
+
+	WINDOW CreateWin(int width, int height, const char* title)
+	{
+		RECT wrect={0,0,width,height};
+		AdjustWindowRectEx(&wrect,WS_OVERLAPPEDWINDOW,FALSE,WS_EX_APPWINDOW);
+		HWND wnd=CreateWindowExW(WS_EX_APPWINDOW,L"APP01",L"",WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,
+			wrect.right-wrect.left,wrect.bottom-wrect.top,0,0,0,0);
+
+		ShowWindow(wnd,SW_SHOWNORMAL);
+		UpdateWindow(wnd);
+		return wnd;
+	}
+
+	bool EventLoop(EventCallback cb, void* userdata)
+	{
+		eventCB=cb;
+		eventUserData=userdata;
+		return 0;
+	}
+
+	void Sleep(float dt)
+	{
+	}
+
+	double GetTime()
+	{
+		return 0;
+	}
+
+	void CloseWindow(WINDOW win)
+	{
+	}
+
+	void Done()
+	{
+	}
+
+	bool QuitRequested()
+	{
+		return false;
+	}
 };
 
 #endif
