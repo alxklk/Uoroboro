@@ -1,15 +1,14 @@
 #pragma once
 
 #include <stdio.h>
-#include "utility.h"
+#include "system.h"
 
 class CMaster
 {
 public:
 	CMaster();
 	~CMaster();
-
-	bool Init(Display* dsp, Window& win);
+	bool Init(const SYS& sys, WINDOW& win);
 	void KeyEvent(const SKeyEvent& kevent);
 	void MouseEvent(const SMouseEvent& mevent);
 	void Render();

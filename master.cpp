@@ -1,3 +1,4 @@
+#include "system.h"
 #include "master.h"
 #include "gl.h"
 
@@ -11,9 +12,9 @@ CMaster::~CMaster()
 {
 }
 
-bool CMaster::Init(Display* dsp, Window& win)
+bool CMaster::Init(const SYS& sys, WINDOW& win)
 {
-	gl.Init(dsp, win);
+	gl.Init(sys.dsp, win);
 	return true;
 }
 
