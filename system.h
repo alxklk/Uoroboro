@@ -476,6 +476,9 @@ struct SYS
 		HWND wnd=CreateWindowExW(WS_EX_APPWINDOW,L"APP01",L"",WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,
 			wrect.right-wrect.left,wrect.bottom-wrect.top,0,0,0,0);
 
+		static const int GWL_USERDATA = -21;
+		SetWindowLongPtrW(wnd, GWL_USERDATA, (LONG_PTR)(this));
+
 		ShowWindow(wnd,SW_SHOWNORMAL);
 		UpdateWindow(wnd);
 		return wnd;
