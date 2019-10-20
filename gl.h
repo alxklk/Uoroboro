@@ -28,7 +28,19 @@ using GLContext=GLXContext;
 
 using GLContext=HGLRC;
 
-template <typename T>void wgpa(T& p, const char* name){p=(T)wglGetProcAddress(name);};
+template <typename T>void wgpa(T& p, const char* name)
+{
+	p=(T)wglGetProcAddress(name);
+	if(p==0)
+	{
+		printf("Function %s not found\n", name);
+		char nameExt[128];
+		strcpy(nameExt,name);
+		strcat(nameExt,"EXT");
+		p=(T)wglGetProcAddress(name);
+		printf("Function %s not found\n", nameExt);
+	}
+};
 
 #define STR(S) #S
 #define WGPA(S) wgpa(S, STR(S))
@@ -84,8 +96,6 @@ public:
 	WGPA(glRenderbufferStorage);
 	WGPA(glFramebufferRenderbuffer);
 	WGPA(glFramebufferTexture2D);
-
-
 
 	}
 
@@ -263,11 +273,12 @@ public:
 
 	int Init(const SYS* sys, WINDOW& window)
 	{
+		puts("******** Init ... **********\n");
 		blurRadius=1.0;
+		win=window;
 #ifdef __linux__
 		dsp=sys->dsp;
-		win=window;
-		int doubleBufferVisual[]= 
+		int doubleBufferVisual[]=
 		{
 			GLX_RGBA,           // Needs to support OpenGL
 			GLX_RED_SIZE, 1,
@@ -353,6 +364,7 @@ public:
 		shGaussVert.CreateFromFile("shgaussvert.glsl");
 		shGaussHorz.CreateFromFile("shgausshorz.glsl");
 		shBlit.CreateFromFile("shblit.glsl");
+		puts("******** Init OK **********\n");
 		return 1;
 	}
 
