@@ -58,7 +58,7 @@ void RP(float3 tp0, float3 dp1, float3 dp2, float3 rp0, float3 rd, out float t, 
     n=normalize(dett);
 }
 
-float arws0(float2 p, float t)
+float arws(float2 p, float t)
 {
     float2 p1=float2(p.x+p.y,p.x-p.y);
     float2 f1xy=abs(fract(p1/sqrt(8.0))-0.5)-0.25;
@@ -85,7 +85,7 @@ float chkr(float2 p, float t)
 
 float plnt(float2 p, float t)
 {
-    return chkr(p,t);
+    return arws(p,t);
 }
 
 void trace(float3 rp0, float3 rd, out float t, out float3 pos, out float3 n)
@@ -158,8 +158,6 @@ float nose(float x, float y, float z)
 
 float value0(float3 p)
 {
-    p.y-=1.;
-    p*=0.4;
     float x=p.x;
     float y=p.y;
     float z=p.z;
@@ -197,8 +195,9 @@ float value0(float3 p)
 float value(float3 p)
 {
 	float v=value0(p);
+ 	//v=length(p*.3)-1.;
     return v;
-    return smax(v,p.x*.3,0.01);
+    return smax(v,p.x,0.01);
 }
 
 bool raymarch(float3 start, float3 d, float startT, float endT, float stp, const int N, out float t, out float v)
@@ -210,6 +209,7 @@ bool raymarch(float3 start, float3 d, float startT, float endT, float stp, const
     int i=0;
     for(int j=0;j<1;j+=0)
     {
+        t+=max(v, stp);
         float v1=value(start+d*t);
         if(v1<0.)
         {
@@ -217,14 +217,13 @@ bool raymarch(float3 start, float3 d, float startT, float endT, float stp, const
 	        v=value(start+d*t);
             return true;
         }
-		v=v1;
-        t0=t;
+        if(t>endT)
+            break;
         i++;
         if(i>N)
             break;
-        t+=max(v,stp);
-        if(t>endT)
-            break;
+		v=v1;
+        t0=t;
     }
     return false;
 }
@@ -246,10 +245,44 @@ float nrand( vec2 n )
 	return fract(sin(dot(n.xy, vec2(12.9898, 78.233)))* 43758.5453);
 }
 
+struct Ray
+{
+    vec3 p;
+    vec3 d;
+};
+
+struct Sphere
+{
+    vec3 p;
+    float r;
+};
+
+bool RaySphere(in Ray r, in Sphere s, out float t0, out float t1)
+{
+	float3 l=s.p-r.p;
+	float tc=dot(l,r.d);
+	if(tc<0.0)
+    {
+        return false;
+    };
+
+    float d2=s.r*s.r+tc*tc-dot(l,l);
+
+	if(d2<0.0)
+    {
+        return false;
+    };
+
+	float thc=sqrt(d2);
+	t0=tc-thc;
+    t1=tc+thc;
+    return true;
+}
+
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-    float3 campos=float3(-20.0,3.0,0.0);
-    float3 look_at=float3(0.0,1.0,0.0);
+    float3 campos=float3(-12.0,3.0,0.0);
+    float3 look_at=float3(0.0,0.5,0.0);
     float3 up=float3(0,1,0);
     float3 forward;
     float3 right;
@@ -297,7 +330,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float2 scr2ray=scr;
     scr2ray.x*=(iResolution.x/iResolution.y);
 	float2 uv=scr2ray;
-    float3 ray=normalize(forward+(up*uv.y+right*uv.x)*0.3);
+    float3 ray=normalize(forward+(up*uv.y+right*uv.x)*0.2);
 
     float3 col=float3(0.0,0.5,0.0);
     float3 n;
@@ -338,10 +371,14 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     	fragColor.rgb=col;
     }
     {
-    	float t1;
+    	float t0, t1;
 	    float3 start=campos;
         float n0;
-        if(raymarch(start,ray,10.,30.,.1,60,t1,n0))
+
+        bool hit=RaySphere(Ray(start,ray), Sphere(vec3(.0,.3,.2),2.5), t0, t1);
+        if(hit)
+            fragColor.rgb*=0.6;
+        if(hit&&raymarch(start,ray,t0,t1,.05,60,t1,n0))
         {
             if(t1<t)
             {
@@ -399,6 +436,5 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     fragColor.a=1.0;
 
 }
-
 #endif
 
