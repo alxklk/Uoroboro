@@ -190,21 +190,29 @@ float value(float3 p)
     return smax(v,p.x*.3,0.01);
 }
 
-bool raymarch(float3 start, float3 d, float t0, float stp, const int N, out float t, out float v)
+bool raymarch(float3 start, float3 d, float startT, float stp, const int N, out float t, out float v)
 {
+    float t0=startT;
     t=t0;
 
     int i=0;
     for(int j=0;j<1;j+=0)
     {
 	    float3 p=start+d*t;
-        v=value(p);
-        if(v<0.)
+        float v1=value(p);
+        if(v1<0.)
+        {
+            t=t0+(t-t0)*v/(v-v1);
+            p=start+d*t;
+	        v=value(p);
             return true;
+        }
+		v=v1;
+        t0=t;
         i++;
         if(i>N)
             break;
-        t+=max(v*2.,stp);
+        t+=max(v,stp);
     }
     return false;
 }
@@ -321,7 +329,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     	float t1;
 	    float3 start=campos;
         float n0;
-        if(raymarch(start,ray,10.+nrand(scr),.025,150,t1,n0))
+        if(raymarch(start,ray,10.+nrand(scr),.25,50,t1,n0))
         {
             if(t1<t)
             {
