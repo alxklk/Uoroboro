@@ -23,7 +23,6 @@ void main()
 	gl_FragColor=col;
 }
 
-
 // Fork of "Isosurface Heart" by klk. https://shadertoy.com/view/XtVSRh
 // 2019-10-17 20:19:15
 
@@ -195,22 +194,35 @@ float value0(float3 p)
 float value(float3 p)
 {
 	float v=value0(p);
- 	//v=length(p*.3)-1.;
     return v;
+    v=smax(abs(p.y)-1.5, sqrt(sq(p.z)+sq(p.x))-1.5,.5);
+    v=smax(v,-sqrt(sq(p.y+.5)+sq(p.x))+.4,.5);
+    v=smax(v,-sqrt(sq(p.y+.5)+sq(p.z))+.4,.05);
+    v=smin(v, torus(p.x,p.z,p.y-1.75,0.5,.2),.5);
+    v=smax(v, -torus(p.x,p.y-1.,p.z,1.35,.35),.5);
     return smax(v,p.x,0.01);
+    return v;
 }
 
-bool raymarch(float3 start, float3 d, float startT, float endT, float stp, const int N, out float t, out float v)
+bool raymarch(
+    const float3 start, const float3 d,
+    const float startT, const float endT,
+    const float stp,
+    const int N,
+    out float t, out float v, out int i)
 {
     float t0=startT;
     t=t0;
     v=value(start+d*t);
+    i=0;
+    if(v<0.)
+        return true;
 
-    int i=0;
+
     for(int j=0;j<1;j+=0)
     {
-        t+=max(v, stp);
-        float v1=value(start+d*t);
+    	t+=max(v*.8, stp);
+	    float v1=value(start+d*t);
         if(v1<0.)
         {
             t=t0+(t-t0)*v/(v-v1);
@@ -218,11 +230,11 @@ bool raymarch(float3 start, float3 d, float startT, float endT, float stp, const
             return true;
         }
         if(t>endT)
-            break;
+            return false;
         i++;
         if(i>N)
-            break;
-		v=v1;
+           	return false;
+        v=v1;
         t0=t;
     }
     return false;
@@ -313,10 +325,10 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float camx=sin(a1)*campos.x;
     campos.x=cos(a2)*camx;
     campos.z=sin(a2)*camx;
-    light=campos*2.0;
-    light.x=10.0;
-    light.z=15.0;
-    light.y=10.0;
+//    light=campos*2.0;
+//    light.x=10.0;
+//    light.z=15.0;
+//    light.y=10.0;
 //    campos+=look_at;
 
     forward=normalize(look_at-campos);
@@ -348,19 +360,20 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     {
         float t1=MAX_RAY_LENGTH;
         float3 col1;
+        float3 colp=vec3(0);
         float3 n1;
-        RP(float3(0.,0.,0.),float3(0.0,1.0,0.0),float3(0.0,0,1.0),campos, ray, t1, col1, n1);
+        RP(float3(0.,0.,0.),float3(0.0,1.0,0.0),float3(1.0,0,0.0),campos, ray, t1, col1, n1);
         float3 pos=campos+ray*t1;
         if(t1<t)
         {
             t=t1;
-            float v=value0(pos);
-            col.r=v>0.?fract(v):0.5;
-            col.b=v<0.?fract(v):0.5;
-            col.g=.5-abs(clamp(fract(v*10.),0.,1.)-0.5);
+            float v=value(pos);
+            colp.r=v>0.?fract(v):0.5;
+            colp.b=v<0.?fract(v):0.5;
+            colp.g=.5-abs(clamp(fract(v*10.),0.,1.)-0.5);
         }
-    	fragColor.rgb=col;
-        return;
+    	col.rgb+=colp.rgb*0.5;
+        //return;
 
     }
 
@@ -375,10 +388,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	    float3 start=campos;
         float n0;
 
-        bool hit=RaySphere(Ray(start,ray), Sphere(vec3(.0,.3,.2),2.5), t0, t1);
+        bool hit=RaySphere(Ray(start,ray), Sphere(vec3(.0,.3,.2),4.5), t0, t1);
+//        if(hit)fragColor.rgb*=1.2;
+        int nt=0;
+        hit=hit&&raymarch(start,ray,t0,t1,.01,180,t1,n0,nt);
+
         if(hit)
-            fragColor.rgb*=0.6;
-        if(hit&&raymarch(start,ray,t0,t1,.05,60,t1,n0))
         {
             if(t1<t)
             {
@@ -409,7 +424,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     			if(t1<MAX_RAY_LENGTH)
                 {
 				    rcol=mix(float3(0.87,0.85,0.83),float3(0.1,0.12,0.4),
-                		smoothstep(0.0,1.0,plnt(rpos.xz*0.2,1000.0/tr/tr)));
+                		smoothstep(0.0,1.0,plnt(rpos.xz*0.2,600.0/tr/tr)));
 			        rcol=mix(reffog,rcol,exp(-tr*0.02));
                 }
                 else
@@ -417,8 +432,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                     rcol=reffog;
                 }
                 {
-                    col=mix(col,rcol,pow(fresn,3.6)*0.50);
-                    col+=rcol*(pow(fresn,2.6)*0.2+0.2);
+                    col=mix(col,rcol,pow(fresn,1.2)*0.50);
+                    col+=rcol*(pow(fresn,2.6)*0.2+0.1);
                     col=mix(col,float3(1,1,1),pow(spec2,40.0)*.4);
 //                    col*=float3(1.0,0.8,0.5);
                     col=mix(col,float3(1,1,1),.8*pow(spec2,180.0));
@@ -431,6 +446,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                 fragColor.rgb=col;
             }
         }
+
+        //if(nt>16)fragColor.rg+=vec2(.5,.25);if(nt>32)fragColor.g-=.5;
+
     }
 
     fragColor.a=1.0;
