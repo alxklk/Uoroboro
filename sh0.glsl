@@ -13,6 +13,17 @@ void main()
 
 #ifdef FRAGMENT_SHADER
 
+void mainImage( out vec4 fragColor, in vec2 fragCoord );
+void main()
+{
+	vec2 tc=v_p;
+	vec4 col;
+	mainImage(col, vec2(tc.x*1024.0, tc.y*768.0));
+
+	gl_FragColor=col;
+}
+
+
 // Fork of "Isosurface Heart" by klk. https://shadertoy.com/view/XtVSRh
 // 2019-10-17 20:19:15
 
@@ -190,21 +201,20 @@ float value(float3 p)
     return smax(v,p.x*.3,0.01);
 }
 
-bool raymarch(float3 start, float3 d, float startT, float stp, const int N, out float t, out float v)
+bool raymarch(float3 start, float3 d, float startT, float endT, float stp, const int N, out float t, out float v)
 {
     float t0=startT;
     t=t0;
+    v=value(start+d*t);
 
     int i=0;
     for(int j=0;j<1;j+=0)
     {
-	    float3 p=start+d*t;
-        float v1=value(p);
+        float v1=value(start+d*t);
         if(v1<0.)
         {
             t=t0+(t-t0)*v/(v-v1);
-            p=start+d*t;
-	        v=value(p);
+	        v=value(start+d*t);
             return true;
         }
 		v=v1;
@@ -213,6 +223,8 @@ bool raymarch(float3 start, float3 d, float startT, float stp, const int N, out 
         if(i>N)
             break;
         t+=max(v,stp);
+        if(t>endT)
+            break;
     }
     return false;
 }
@@ -220,7 +232,7 @@ bool raymarch(float3 start, float3 d, float startT, float stp, const int N, out 
 float3 calcN(float3 p, float n0)
 {
     float3 n;
-    float d=0.0001;
+    float d=0.01;
     n.x=value(p+float3(d,0.0,0.0))-n0;
     n.y=value(p+float3(0.0,d,0.0))-n0;
     n.z=value(p+float3(0.0,0.0,d))-n0;
@@ -329,7 +341,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     	float t1;
 	    float3 start=campos;
         float n0;
-        if(raymarch(start,ray,10.+nrand(scr),.25,50,t1,n0))
+        if(raymarch(start,ray,10.,30.,.1,60,t1,n0))
         {
             if(t1<t)
             {
@@ -386,15 +398,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     fragColor.a=1.0;
 
-}
-
-void main()
-{
-	vec2 tc=v_p;
-	vec4 col;
-	mainImage(col, tc*1024.0);
-
-	gl_FragColor=col;
 }
 
 #endif
