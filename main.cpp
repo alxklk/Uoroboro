@@ -25,7 +25,9 @@ int main(int argc, char** argv)
 			if(event.eventType==SEvent::Key)
 				master->KeyEvent(event.ke);
 			else if(event.eventType==SEvent::Mouse)
+			{
 				master->MouseEvent(event.me);
+			}
 			return 0;
 		},
 		master

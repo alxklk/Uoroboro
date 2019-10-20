@@ -485,6 +485,18 @@ struct SYS
 	{
 		eventCB=cb;
 		eventUserData=userdata;
+		MSG msg={0,0,0,0,0,{0,0}};
+		{
+			while(PeekMessageW(&msg,0,0,0,PM_REMOVE))
+			{
+				TranslateMessage(&msg);
+				DispatchMessageW(&msg);
+				if(msg.message==WM_QUIT)
+					break;
+			}
+			if(msg.message==WM_QUIT)
+				return 1;
+		}
 		return 0;
 	}
 
