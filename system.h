@@ -332,6 +332,7 @@ using WINDOW=HWND;
 
 struct SYS
 {
+	bool quitRequested=false;
 	union XYLPARAM
 	{
 		unsigned int l;
@@ -454,6 +455,8 @@ struct SYS
 			if(sys->eventCB)
 				sys->eventCB(event,sys->eventUserData);
 		}
+		if(imsg==WM_DESTROY)
+			PostQuitMessage(0);
 		return DefWindowProcW(hwnd, imsg, wpar, lpar);
 	}
 
@@ -495,10 +498,16 @@ struct SYS
 				TranslateMessage(&msg);
 				DispatchMessageW(&msg);
 				if(msg.message==WM_QUIT)
+				{
+					quitRequested=true;
 					break;
+				}
 			}
 			if(msg.message==WM_QUIT)
+			{
+				quitRequested=true;
 				return 1;
+			}
 		}
 		return 0;
 	}
@@ -523,7 +532,7 @@ struct SYS
 
 	bool QuitRequested()
 	{
-		return false;
+		return quitRequested;
 	}
 };
 
