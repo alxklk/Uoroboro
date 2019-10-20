@@ -490,6 +490,7 @@ struct SYS
 
 	void Sleep(float dt)
 	{
+		::Sleep(dt*1000);
 	}
 
 	double GetTime()

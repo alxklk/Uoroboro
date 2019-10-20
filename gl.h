@@ -87,6 +87,9 @@ public:
 	WGPA(glLinkProgram);
 	WGPA(glUseProgram);
 	WGPA(glGetUniformLocation);
+	WGPA(glUniform1f);
+	WGPA(glUniform2f);
+	WGPA(glUniform3f);
 	WGPA(glUniform4f);
 
 	WGPA(glGenFramebuffers);
@@ -330,6 +333,7 @@ public:
 		SetPixelFormat(dc, ChoosePixelFormat(dc, &pfd), &pfd);
 		glc = wglCreateContext(dc);
 		wglMakeCurrent(dc, glc);
+		doubleBuf=true;
 
 #endif
 
