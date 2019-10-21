@@ -23,6 +23,7 @@ void main()
 	gl_FragColor=col;
 }
 
+
 // Fork of "Isosurface Heart" by klk. https://shadertoy.com/view/XtVSRh
 // 2019-10-17 20:19:15
 
@@ -195,6 +196,13 @@ float value(float3 p)
 {
 	float v=value0(p);
     return v;
+	v=10.;
+    float a=atan(p.x,p.z);
+    float h0=sin(a*3.)*.4;
+    v=smin(v, torus(p.x,p.y+h0,p.z,1.5,.2),.5);
+    float h1=sin(a*3.+PI)*.4;
+    v=smin(v, torus(p.x,p.y+h1,p.z,1.5,.2),3.);
+    return v;
     v=smax(abs(p.y)-1.5, sqrt(sq(p.z)+sq(p.x))-1.5,.5);
     v=smax(v,-sqrt(sq(p.y+.5)+sq(p.x))+.4,.5);
     v=smax(v,-sqrt(sq(p.y+.5)+sq(p.z))+.4,.05);
@@ -221,7 +229,7 @@ bool raymarch(
 
     for(int j=0;j<1;j+=0)
     {
-    	t+=max(v*.8, stp);
+    	t+=max(v*.85, stp);
 	    float v1=value(start+d*t);
         if(v1<0.)
         {
@@ -353,7 +361,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float3 tpos;
     trace(campos, ray, t, tpos, n);
     col=mix(float3(0.97,0.95,0.83),float3(0.1,0.15,0.4),
-                smoothstep(0.0,1.0,plnt(tpos.xz*0.2,3.*36000.0/t/t)));
+                smoothstep(0.0,1.0,plnt(tpos.xz*0.2,36000.0/t/t)));
     float3 tolight=normalize(light);
 
     if(1<0)
@@ -387,11 +395,13 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     	float t0, t1;
 	    float3 start=campos;
         float n0;
+        Sphere bound=Sphere(vec3(.0,.3,.2),2.5);
 
-        bool hit=RaySphere(Ray(start,ray), Sphere(vec3(.0,.3,.2),2.5), t0, t1);
-//        if(hit)fragColor.rgb*=1.2;
-        int nt=0;
-        hit=hit&&raymarch(start,ray,t0,t1,.01,80,t1,n0,nt);
+        bool hit=RaySphere(Ray(start,ray), bound, t0, t1);
+        //if(hit)fragColor.rgb*=0.8;
+        int nt=-1;
+        hit=hit&&raymarch(start,ray,t0,t1,.025,180,t1,n0,nt);
+
 
         if(hit)
         {
@@ -399,6 +409,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             {
             	float3 p=start+ray*t1;
             	float3 n=calcN(p,n0);
+                if(nt<0)
+                {
+					n=normalize(p-bound.p);
+                }
+
 //                float3 tolight=normalize(light-p);
 			    float3 halfn=normalize(tolight-ray);
 
@@ -447,12 +462,22 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             }
         }
 
-        //if(nt>16)fragColor.rg+=vec2(.5,.25);if(nt>32)fragColor.g-=.5;
-
+       if(false)
+        {
+            if(nt>8)
+                fragColor.g+=.2;
+            if(nt>16)
+                fragColor.r+=.4;
+            if(nt>32)
+                fragColor.g-=.2;
+            if(nt>48)
+                fragColor.rb+=vec2(-.4,.4);
+        }
     }
 
     fragColor.a=1.0;
 
 }
+
 #endif
 
