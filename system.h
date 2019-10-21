@@ -9,7 +9,27 @@
 
 #include "events.h"
 
-typedef int(*EventCallback)(SEvent&, void* userData);
+typedef int(*EventCallback)(const SEvent&, void* userData);
+
+class CommonSYS
+{
+	EventCallback eventCallback=nullptr;
+	void* eventUserdata=nullptr;
+public:
+	void RegisterCallback(EventCallback newCB, void* userData)
+	{
+		eventCallback=newCB;
+		eventUserdata=userData;
+	}
+	void CallEventCB(const SEvent& event)
+	{
+		if(eventCallback)
+		{
+			eventCallback(event, eventUserdata);
+		}
+	}
+};
+
 
 #ifdef __linux__
 
@@ -17,6 +37,7 @@ typedef int(*EventCallback)(SEvent&, void* userData);
 #include <X11/XKBlib.h>
 #include <X11/Xutil.h>
 #include <ctime>
+#include <cmath>
 
 using WINDOW=Window;
 
@@ -167,17 +188,21 @@ inline bool ParseMouseEvent(const XEvent& ev, SMouseEvent& me)
 }
 
 
-struct SYS
+class SYS : public CommonSYS
 {
 	Display* dsp=nullptr;
 	bool quitRequested=false;
 	Atom WM_PROTOCOLS;
 	Atom WM_DELETE_WINDOW;
 
+public:
+
+	Display* GetDSP()const{return dsp;}
+
 	int Init()
 	{
 		dsp=XOpenDisplay (nullptr);
-		if(dsp== nullptr)
+		if(dsp==nullptr)
 		{
 			fprintf(stderr, "No display available\n");
 			return 1;
@@ -222,8 +247,8 @@ struct SYS
 			ButtonPressMask|ButtonReleaseMask|PointerMotionMask|
 			FocusChangeMask|StructureNotifyMask;
 
-		XMapWindow (dsp,win);
-		XSelectInput (dsp, win,  EventMask);
+		XMapWindow(dsp,win);
+		XSelectInput(dsp, win, EventMask);
 
 		WM_PROTOCOLS=XInternAtom(dsp,"WM_PROTOCOLS",false);
 		WM_DELETE_WINDOW=XInternAtom(dsp,"WM_DELETE_WINDOW",false);
@@ -231,7 +256,7 @@ struct SYS
 		return win;
 	}
 
-	bool EventLoop(EventCallback cb, void* userdata)
+	bool EventLoop()
 	{
 		XEvent ev;
 		while(XPending (dsp))
@@ -258,7 +283,7 @@ struct SYS
 			if (ParseMouseEvent (ev, mouseEvent.me))
 			{
 				mouseEvent.eventType=SEvent::Mouse;
-				cb(mouseEvent, userdata);
+				CallEventCB(mouseEvent);
 			}
 			if ((ev.type==KeyPress)||(ev.type==KeyRelease))
 			{
@@ -277,11 +302,11 @@ struct SYS
 						}
 					}
 				}
-				SEvent keyEvent;
+				SEvent keyEvent={SEvent::Key};
 				ParseKeyEvent(dsp,ev,keyEvent.ke);
 				if(autoRepeat)
 					keyEvent.ke.type=SKeyEvent::REP;
-				cb(keyEvent, userdata);
+				CallEventCB(keyEvent);
 			}
 		}
 		return 0;
@@ -291,8 +316,9 @@ struct SYS
 	{
 		timespec req;
 		timespec rem;
-		req.tv_nsec=1000000000*dt;
-		req.tv_sec=0;
+		float sec=trunc(dt);
+		req.tv_nsec=1000000000*(dt-sec);
+		req.tv_sec=sec;
 		nanosleep(&req, &rem);
 	}
 
@@ -330,7 +356,7 @@ struct SYS
 
 using WINDOW=HWND;
 
-struct SYS
+struct SYS : public CommonSYS
 {
 	bool quitRequested=false;
 	union XYLPARAM
@@ -387,8 +413,8 @@ struct SYS
 		int x=XYLPARAM(lpar).x;
 		int y=XYLPARAM(lpar).y;
 
-		static int old_ldnx=0;
-		static int old_ldny=0;
+		static int old_ldnx=x;
+		static int old_ldny=y;
 
 		switch(imsg)
 		{
@@ -439,8 +465,66 @@ struct SYS
 		return 1;
 	}
 
-	EventCallback eventCB=nullptr;
-	void* eventUserData=nullptr;
+
+	static bool keyEvent(HWND hwnd,unsigned int imsg,WPARAM wpar,LPARAM lpar, SEvent& ke)
+	{
+		bool isKeyEvent=false;
+		bool down=false;
+		if((imsg==WM_KEYDOWN)||(imsg==WM_SYSKEYDOWN))
+		{
+			down=true;
+			isKeyEvent=true;
+		}
+		else if((imsg==WM_KEYUP)||(imsg==WM_SYSKEYUP))
+		{
+			isKeyEvent=true;
+		}
+		if(!isKeyEvent)
+			return false;
+
+		unsigned char key=(unsigned char)((lpar&0x0ff0000)>>16);
+		ke.eventType=SEvent::Key;
+		ke.ke.sysCode=key;
+
+		bool alt=(GetKeyState(VK_MENU)&0x8000)!=0;
+		bool ctl=(GetKeyState(VK_CONTROL)&0x8000)!=0;
+		bool shift=(GetKeyState(VK_SHIFT)&0x8000)!=0;
+
+
+		if(down)
+		{
+			if(lpar&(1<<30))
+				ke.ke.type=SKeyEvent::REP;
+			else
+				ke.ke.type=SKeyEvent::DN;
+		}
+		else
+		{
+			ke.ke.type=SKeyEvent::UP;
+		}
+
+		//TODO: add other keys
+		/***/if(wpar==VK_UP)         ke.ke.code=SKeyCode::UP;
+		else if(wpar==VK_DOWN)       ke.ke.code=SKeyCode::DOWN;
+		else if(wpar==VK_LEFT)       ke.ke.code=SKeyCode::LEFT;
+		else if(wpar==VK_RIGHT)      ke.ke.code=SKeyCode::RIGHT;
+		else if(wpar==VK_ESCAPE)     ke.ke.code=SKeyCode::ESC;
+		else if(wpar==VK_SPACE)      ke.ke.code=SKeyCode::SPACE;
+		else if(wpar==VK_F1)         ke.ke.code=SKeyCode::F1;
+		else if(wpar==VK_F2)         ke.ke.code=SKeyCode::F2;
+		else if(wpar==VK_F3)         ke.ke.code=SKeyCode::F3;
+		else if(wpar==VK_F4)         ke.ke.code=SKeyCode::F4;
+		else if(wpar==VK_F5)         ke.ke.code=SKeyCode::F5;
+		else if(wpar==VK_F6)         ke.ke.code=SKeyCode::F6;
+		else if(wpar==VK_F7)         ke.ke.code=SKeyCode::F7;
+		else if(wpar==VK_F8)         ke.ke.code=SKeyCode::F8;
+		else if(wpar==VK_F9)         ke.ke.code=SKeyCode::F9;
+		else if(wpar==VK_F10)        ke.ke.code=SKeyCode::F10;
+		else if(wpar==VK_F11)        ke.ke.code=SKeyCode::F11;
+		else if(wpar==VK_F12)        ke.ke.code=SKeyCode::F12;
+		return true;
+	}
+
 
 	static LRESULT CALLBACK wp(HWND hwnd,unsigned int imsg,WPARAM wpar,LPARAM lpar)
 	{
@@ -452,14 +536,17 @@ struct SYS
 		if(MouseEvent(hwnd,imsg,wpar,lpar,event,callDefProc))
 		{
 			SYS* sys=(SYS*)GetWindowLongPtrW(hwnd, GWL_USERDATA);
-			if(sys->eventCB)
-				sys->eventCB(event,sys->eventUserData);
+			sys->CallEventCB(event);
 		}
-		if(imsg==WM_DESTROY)
+		else if(keyEvent(hwnd,imsg,wpar,lpar,event))
+		{
+			SYS* sys=(SYS*)GetWindowLongPtrW(hwnd, GWL_USERDATA);
+			sys->CallEventCB(event);
+		}
+		else if(imsg==WM_DESTROY)
 			PostQuitMessage(0);
 		return DefWindowProcW(hwnd, imsg, wpar, lpar);
 	}
-
 
 	int Init()
 	{
@@ -476,7 +563,7 @@ struct SYS
 	{
 		RECT wrect={0,0,width,height};
 		AdjustWindowRectEx(&wrect,WS_OVERLAPPEDWINDOW,FALSE,WS_EX_APPWINDOW);
-		HWND wnd=CreateWindowExW(WS_EX_APPWINDOW,L"APP01",L"",WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,
+		HWND wnd=CreateWindowEx(WS_EX_APPWINDOW,"APP01",title,WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,CW_USEDEFAULT,
 			wrect.right-wrect.left,wrect.bottom-wrect.top,0,0,0,0);
 
 		static const int GWL_USERDATA = -21;
@@ -487,10 +574,8 @@ struct SYS
 		return wnd;
 	}
 
-	bool EventLoop(EventCallback cb, void* userdata)
+	bool EventLoop()
 	{
-		eventCB=cb;
-		eventUserData=userdata;
 		MSG msg={0,0,0,0,0,{0,0}};
 		{
 			while(PeekMessageW(&msg,0,0,0,PM_REMOVE))
@@ -519,15 +604,17 @@ struct SYS
 
 	double GetTime()
 	{
-		return 0;
+		return ::GetTickCount()/1000.0;
 	}
 
 	void CloseWindow(WINDOW win)
 	{
+		::CloseWindow(win);
 	}
 
 	void Done()
 	{
+
 	}
 
 	bool QuitRequested()

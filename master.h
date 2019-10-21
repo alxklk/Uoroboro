@@ -2,17 +2,16 @@
 
 #include <stdio.h>
 #include "system.h"
+#include "gl.h"
 
 class CMaster
 {
+	CGL gl;
 public:
-	CMaster();
+	CMaster(const SYS& sys, WINDOW& win);
 	~CMaster();
-	bool Init(const SYS& sys, WINDOW& win);
 	void KeyEvent(const SKeyEvent& kevent);
 	void MouseEvent(const SMouseEvent& mevent);
 	void Render();
-	void Done();
-	
 };
 

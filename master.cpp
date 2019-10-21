@@ -2,35 +2,23 @@
 #include "master.h"
 #include "gl.h"
 
-CGL gl;
-
-CMaster::CMaster()
+CMaster::CMaster(const SYS& sys, WINDOW& win)
 {
+	gl.Init(&sys, win);
 }
 
 CMaster::~CMaster()
 {
-}
-
-bool CMaster::Init(const SYS& sys, WINDOW& win)
-{
-	gl.Init(&sys, win);
-	return true;
+	gl.Done();
 }
 
 void CMaster::KeyEvent(const SKeyEvent& kevent)
 {
 	if((kevent.type==SKeyEvent::DN)||(kevent.type==SKeyEvent::REP))
 	{
-		if(kevent.code==SKeyCode::DOWN)
+		if(kevent.code==SKeyCode::SPACE)
 		{
-			gl.DecreaseBlur();
-			fflush(stdout);
-		}
-		else if(kevent.code==SKeyCode::UP)
-		{
-			gl.IncreaseBlur();
-			fflush(stdout);
+			gl.NextMode();
 		}
 		else if(kevent.code==SKeyCode::F5)
 		{
@@ -44,13 +32,7 @@ void CMaster::MouseEvent(const SMouseEvent& mevent)
 	gl.SetMousePos(mevent.x, mevent.y);
 }
 
-
 void CMaster::Render()
 {
 	gl.Render();
-}
-
-void CMaster::Done()
-{
-	
 }
