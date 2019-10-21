@@ -388,10 +388,10 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	    float3 start=campos;
         float n0;
 
-        bool hit=RaySphere(Ray(start,ray), Sphere(vec3(.0,.3,.2),4.5), t0, t1);
+        bool hit=RaySphere(Ray(start,ray), Sphere(vec3(.0,.3,.2),2.5), t0, t1);
 //        if(hit)fragColor.rgb*=1.2;
         int nt=0;
-        hit=hit&&raymarch(start,ray,t0,t1,.01,180,t1,n0,nt);
+        hit=hit&&raymarch(start,ray,t0,t1,.01,80,t1,n0,nt);
 
         if(hit)
         {
