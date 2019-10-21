@@ -34,18 +34,18 @@ void main()
 	float radius=30.;
 	if(mode==2)
 	{
-		radius=abs(tc.y-.5)*30.;
+		radius=pow(abs(tc.y-.5)*2.5,2.)*35.;
 	}
 	else if(mode==3)
 	{
 		radius=length(tc-0.5)*3.;
-		radius=pow(radius,4.)*20.;
+		radius=pow(radius,3.)*20.;
 	}
 	else if(mode==4)
 	{
 		float l=length((tc-iMouse.xy/iResolution.xy)/(iResolution.yy/iResolution.xy));
-		if(l<0.2)
-			radius=40.*(1.-l/.2);
+		if(l<0.3)
+			radius=50.*(1.-pow(l/.3,2.));
 		else
 			radius=1.;
 	}
