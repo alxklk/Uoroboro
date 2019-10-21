@@ -18,7 +18,7 @@ using GLContext=GLXContext;
 
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #define GL_EXT_PROTOTYPES
 #define GL_GLEXT_PROTOTYPES
@@ -256,7 +256,7 @@ class CGL
 	Display* dsp;
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 
 	HDC dc;
 
@@ -345,7 +345,7 @@ public:
 		glXMakeCurrent(dsp, win, glc);
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 
 		dc = GetDC(win);
 		PIXELFORMATDESCRIPTOR pfd = { 0, 0, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA,
@@ -432,7 +432,7 @@ public:
 		glXMakeCurrent(dsp, win, glc);
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 		wglMakeCurrent(dc, glc);
 #endif
 
@@ -472,7 +472,7 @@ public:
 #ifdef __linux__
 				glXSwapBuffers(dsp, win);
 #endif
-#ifdef WIN32
+#ifdef _WIN32
 				SwapBuffers(dc);
 #endif
 		else
