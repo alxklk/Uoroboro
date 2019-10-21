@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED( VERSION 3.12 )
 
 set(PRJ Uroboro)
 
-set(CROSS 1)
+set(CROSS 0)
 
 set(CMAKE_CXX_STANDARD 17)
 

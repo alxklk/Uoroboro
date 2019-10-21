@@ -198,7 +198,10 @@ public:
 		fclose(f);
 
 		if(result)
+		{
 			fprintf(stderr,"Shader created OK, %s\n", filename);
+			fflush(stderr);
+		}
 
 		return result;
 	}
@@ -442,25 +445,22 @@ public:
 		sh0.SetUniform4f("iMouse", mx,my,0,0);
 		FSQuad();
 
-
 		glBindTexture(GL_TEXTURE_2D, textureA);
 		FH glBindFramebuffer(GL_FRAMEBUFFER, fboB);
-		shGauss.SetUniform2f("delta",0.,4.);
+		shGauss.Use();
+		shGauss.SetUniform2f("delta",0.,1.);
 		shGauss.SetUniform1i("mode",blurMode);
 		shGauss.SetUniform3f("iResolution", 1024,768,1);
-//		shGauss.SetUniform1f("iTime", 1.);
 		shGauss.SetUniform4f("iMouse", mx,my,0,0);
-		shGauss.Use();
 		FSQuad();
 
 		glBindTexture(GL_TEXTURE_2D, textureB);
 		FH glBindFramebuffer(GL_FRAMEBUFFER, fboC);
+		shGauss.Use();
 		shGauss.SetUniform2f("delta",1.,0.);
 		shGauss.SetUniform1i("mode",blurMode);
 		shGauss.SetUniform3f("iResolution", 1024,768,1);
-//		shGauss.SetUniform1f("iTime", 1.);
 		shGauss.SetUniform4f("iMouse", mx,my,0,0);
-		shGauss.Use();
 		FSQuad();
 
 		glBindTexture(GL_TEXTURE_2D, textureC);

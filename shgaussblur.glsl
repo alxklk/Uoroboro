@@ -29,9 +29,9 @@ void main()
 		gl_FragColor=texture2D(tex, tc.xy);
 		return;
 	}
-	vec4 c=vec4(0);
+	vec3 c=vec3(0);
 	float w=0.0;
-	float radius=15.;
+	float radius=30.;
 	if(mode==2)
 	{
 		radius=abs(tc.y-.5)*30.;
@@ -39,33 +39,40 @@ void main()
 	else if(mode==3)
 	{
 		radius=length(tc-0.5)*3.;
-		radius=pow(radius,4.)*10.;
+		radius=pow(radius,4.)*20.;
 	}
 	else if(mode==4)
 	{
 		float l=length((tc-iMouse.xy/iResolution.xy)/(iResolution.yy/iResolution.xy));
-		if(l<0.15)
-			radius=40.*(1.-l/.15);
+		if(l<0.2)
+			radius=40.*(1.-l/.2);
 		else
 			radius=1.;
 	}
 
-	int count=int(radius)+1;
+	int count=int(radius);
 
 	vec2 d=delta/iResolution.xy;
-	
-	for(int i=-count;i<=count;i++)
+
+	if(count<=1)
+		gl_FragColor=texture2D(tex,tc.xy);
+	else
 	{
-		float g=gauss(float(i)/float(count));
-		vec2 t=tc.xy+d*float(i);
-		if(any(lessThan(t,vec2(0))))
-			continue;
-		if(any(greaterThan(t,vec2(1))))
-			continue;
-		c+=texture2D(tex,t)*g;
-		w+=g;
+
+		for(int i=-count;i<=count;i++)
+		{
+			float g=gauss(float(i)/float(count));
+			vec2 t=tc.xy+d*float(i);
+			if(any(lessThan(t,vec2(0))))
+				continue;
+			if(any(greaterThan(t,vec2(1))))
+				continue;
+			c+=texture2D(tex,t).rgb*g;
+	
+			w+=g;
+		}
+		gl_FragColor=vec4(c/w,1.);
 	}
-	gl_FragColor=c/w;
 }
 
 #endif

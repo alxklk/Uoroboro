@@ -353,7 +353,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float3 tpos;
     trace(campos, ray, t, tpos, n);
     col=mix(float3(0.97,0.95,0.83),float3(0.1,0.15,0.4),
-                smoothstep(0.0,1.0,plnt(tpos.xz*0.2,36000.0/t/t)));
+                smoothstep(0.0,1.0,plnt(tpos.xz*0.2,3.*36000.0/t/t)));
     float3 tolight=normalize(light);
 
     if(1<0)
