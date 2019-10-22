@@ -10,4 +10,4 @@ Otherwise run one of binaries
 
 in the folder with shaders
 
-Press space to switch to nest blur mask
+Press space to switch to next blur mask
