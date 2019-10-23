@@ -2,6 +2,8 @@
 
 Signed Distance Field example with gaussian blur
 
+![](Screenshot.png)
+
 Use CMake for building
 
 Otherwise run one of binaries
